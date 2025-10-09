@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # 1. SERVIÇO: BANCO DE DADOS POSTGRESQL (Metastore e Data Warehouse)
+  postgres:
+    image: postgres:14-alpine
+    container_name: postgres
+    environment:
+      # Credenciais para o Airflow Metastore
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+      # Credenciais para o Data Warehouse (onde você armazenará os dados brutos e transformados)
+      - POSTGRES_HOST_AUTH_METHOD=trust # Simplifica a conexão dentro do Docker
+    ports:
+      - "5432:5432" # Porta para acessar de fora do container (ex: PgAdmin)
+    #volumes:
+      #- ./pgdata:/var/lib/postgresql/data # Persistência dos dados
+    healthcheck: # Garante que o Airflow espere o BD estar pronto
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. SERVIÇO: APACHE AIRFLOW
+  airflow:
+    image: apache/airflow:2.7.2-python3.11 # Escolha uma versão estável
+    container_name: airflow
+    restart: always
+    user: "${AIRFLOW_UID:-50000}:0" # Configuração de permissões recomendada
+    depends_on:
+      postgres:
+        condition: service_healthy # Só inicia após o PostgreSQL estar pronto
+    volumes:
+      - ./dags:/opt/airflow/dags            # Seus arquivos DAG
+      - ./config:/opt/airflow/config        # Configurações do Airflow
+      - ./scripts:/opt/airflow/scripts      # Scripts de Python (para ingestão)
+      - ./dbt_project:/opt/airflow/dbt_project # Seu projeto dbt
+      - airflow_logs:/opt/airflow/logs      # Logs do Airflow
+    ports:
+      - "8080:8080" # Airflow Webserver UI
+
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor # Suficiente para ambiente local
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow # Conexão com o Metastore
+      - AIRFLOW__WEBSERVER__SECRET_KEY=sua_chave_secreta_aqui # Mude isso em produção
+      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-postgres pandas requests psycopg2-binary # Instala as dependências Python necessárias
+
+    # Comando para inicializar o Airflow:
+    command: bash -c "airflow db migrate && airflow users create --username admin --firstname John --lastname Doe --role Admin --email admin@example.com --password admin && airflow webserver"
+
+volumes:
+  airflow_logs:
