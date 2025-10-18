@@ -1,0 +1,15 @@
+name: 'stock_market_etl_pipeline'
+version: '1.0.0'
+config-version: 2
+profile: 'stock_market_etl_pipeline' 
+
+model-paths: ["models"]
+
+models:
+  stock_market:
+    silver:
+      schema: silver
+      materialized: table
+    gold: 
+      schema: gold
+      materialized: table 

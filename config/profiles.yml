@@ -1,0 +1,11 @@
+stock_market_etl_pipeline: # This is the profile name used in dbt_project.yml
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: postgres # Service name in docker-compose.yml
+      user: airflow
+      password: airflow
+      port: 5432
+      dbname: airflow
+      schema: stock_market # The schema where dbt will build the final models (marts)
