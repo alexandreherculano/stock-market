@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: bronze_alpha_vantage
+    schema: bronze
+    description: Daily stock prices data.
+    tables:
+      - name: stock_prices_alphavantage 
+        identifier: stock_prices_alphavantage
+        description: Daily stock prices for selected NASDAQ tickers.
