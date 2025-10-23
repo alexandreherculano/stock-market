@@ -24,13 +24,13 @@ TABLE_NAME = "stock_prices_alphavantage"
 def run_extraction_pipeline():
     """Extracts data from Alpha Vantage and loads it into PostgreSQL."""
     
-    # 1. Get API Key from Airflow Environment Variables
+    # Get API Key from Airflow Environment Variables
     API_KEY = os.environ.get("ALPHA_VANTAGE_API_KEY")
     if not API_KEY:
         # In a real Airflow environment, this variable must be set
         raise ValueError("ALPHA_VANTAGE_API_KEY is not configured.")
 
-    # 2. Database Connection Configuration
+    # Database Connection Configuration
     try:
         db_connection_url = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
         engine = create_engine(db_connection_url)
@@ -43,7 +43,7 @@ def run_extraction_pipeline():
 
     print(f"Starting extraction for date: {d1_str}")
     
-    # 3. API Extraction Loop
+    # API Extraction Loop
     for ticker in TICKERS:
         url = (
             f'https://www.alphavantage.co/query?function={FUNCTION}&symbol={ticker}'
@@ -78,16 +78,13 @@ def run_extraction_pipeline():
         # Alpha Vantage free API rate limit (5 calls per minute)
         time.sleep(12) 
 
-    # 4. PostgreSQL Loading (Load)
+    # PostgreSQL Loading (Load)
     if not df_shape.empty:
         print(f"Data successfully extracted. Rows to load: {len(df_shape)}")
         try:
-            # FIX: Use engine.begin() for DDL operations (like CREATE SCHEMA).
-            # This automatically manages the transaction and commits it, resolving the 'commit' error.
             with engine.begin() as conn:
                 conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA_NAME}"))
 
-            # Insert data using pandas to_sql (This is auto-committed by pandas' underlying connection logic)
             df_shape.to_sql(
                 TABLE_NAME, 
                 engine, 
