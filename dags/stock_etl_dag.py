@@ -5,7 +5,6 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 
 # Imports the extraction and load function from dags/extract_data.py
-# This function (run_extraction_pipeline) is the one created in the Canvas.
 from extract_data import run_extraction_pipeline
 
 
